@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: z-agent-db-secret
+  namespace: default
+type: Opaque
+stringData:
+  username: z_agent_user          # 🔁 replace if needed
+  password: z_agent_password      # 🔁 replace if needed
+---
+# --------------------------------------------
+# 🕒 CronJob: Python Script Runner
+# --------------------------------------------
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: python-script-cronjob
+  namespace: default
+spec:
+  # Runs every 15 minutes (adjust if needed)
+  schedule: "*/15 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: python-script
+              image: zinfradevv1.azurecr.io/dashboardscript:latest
+              imagePullPolicy: Always
+              command: ["python", "main.py"]
+              env:
+                - name: DB_HOST
+                  value: "postgresql-shared.default.svc.cluster.local"
+                - name: DB_PORT
+                  value: "5432"
+                - name: DB_NAME
+                  value: "z_agent"
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: z-agent-db-secret
+                      key: username
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: z-agent-db-secret
+                      key: password
+          restartPolicy: OnFailure
