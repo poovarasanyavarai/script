@@ -65,12 +65,12 @@ def main(reference_date: str = "now") -> None:
         insert_metrics(ref_datetime)
         logger.info("Chatbot metrics processing completed successfully")
 
-        # Process conversations
-        logger.info("Processing chatbot conversations...")
-        insert_chatbot_conversations(ref_datetime)
-        logger.info("Chatbot conversation processing completed successfully")
+        # # Process conversations
+        # logger.info("Processing chatbot conversations...")
+        # insert_chatbot_conversations(ref_datetime)
+        # logger.info("Chatbot conversation processing completed successfully")
 
-        logger.info("All processing completed successfully")
+        # logger.info("All processing completed successfully")
 
     except ValueError as e:
         logger.error(f"Invalid input: {e}")

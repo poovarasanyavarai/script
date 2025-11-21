@@ -32,7 +32,7 @@ def insert_metrics(ref_datetime=None):
     # users = get_users()
     # account_ids = {u.get("account_id") for u in users if u.get("account_id")}
     # account_ids = list(account_ids)
-    account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f"]
+    account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f","8e9a3514-c5e8-52e7-842d-cb4e2a0a0cdb"]
 
     # instead of get_chatbots()
     chatbots = []
