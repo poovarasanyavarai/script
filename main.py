@@ -27,11 +27,8 @@ def main(reference_date: str = "now"):
     print(
         f"Starting chatbot metrics insertion for reference time: {ref_datetime}")
     insert_metrics(ref_datetime)
-    print("Chatbot metrics insertion completed.")
 
-    print("Starting chatbot conversation insertion...")
-    insert_chatbot_conversations(ref_datetime)
-    print("Chatbot conversation insertion completed.\n")
+    # insert_chatbot_conversations(ref_datetime)
 
 
 if __name__ == "__main__":
