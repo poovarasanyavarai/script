@@ -32,7 +32,9 @@ def insert_metrics(ref_datetime=None):
     # users = get_users()
     # account_ids = {u.get("account_id") for u in users if u.get("account_id")}
     # account_ids = list(account_ids)
-    account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f","8e9a3514-c5e8-52e7-842d-cb4e2a0a0cdb"]
+    # account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f","8e9a3514-c5e8-52e7-842d-cb4e2a0a0cdb"]
+    account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f"]
+
 
     # instead of get_chatbots()
     chatbots = []
@@ -40,6 +42,7 @@ def insert_metrics(ref_datetime=None):
         chatbots.extend(query_records("chatbots", "account_id", acc_id))
     settings_list = get_settings()
     conversation_list = get_conversations()
+    print("@##########",conversation_list)
 
     settings_map = {s.get("chatbot_id"): s for s in settings_list}
     conv_map = {c.get("chatbot_id"): c for c in conversation_list}
