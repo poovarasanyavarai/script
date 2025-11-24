@@ -67,7 +67,7 @@ def get_connection():
         user=os.getenv("DB_USER", "z_agent_user"),
         password=os.getenv("DB_PASSWORD", "z_agent_password"),
         host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT", "5554")
     )
 
 

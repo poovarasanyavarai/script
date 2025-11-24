@@ -9,7 +9,7 @@ from typing import Dict, List, Any, Optional
 
 import pycountry
 
-from .config_query import get_settings, query_records
+from .config_query import get_settings, query_records , get_record_by_id
 from .db_query_optimized import (
     get_feedback_stats_by_chatbot_optimized,
     get_language_distribution_optimized
@@ -363,7 +363,7 @@ def insert_chatbot_conversations_optimized(ref_datetime: Optional[datetime] = No
             for conv in conversations:
                 conversation_id = conv.get("id")
                 summary_record = summaries_map.get(conversation_id)
-                query_summary = (summary_record or {}).get("title") or "AI interaction with z-assist"
+                query_summary = (summary_record or {}).get("title") or "general conversation"
 
                 customer = customers_map.get(conversation_id)
                 channel = conv.get("conversation_via") or "Unknown"
