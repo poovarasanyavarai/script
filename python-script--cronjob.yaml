@@ -134,7 +134,7 @@ metadata:
     app: chatbot-metrics
     component: config
 data:
-  config-store-base-url: "http://z-config-store.20.242.183.197.nip.io"
+  config-store-base-url: "https://z-config-store.48.216.130.212.nip.io"
   log-level: "INFO"
   batch-size: "100"
 

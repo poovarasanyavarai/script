@@ -11,6 +11,7 @@ from .db_query import (
     get_language_distribution,
     get_conversations_for_chatbot,
     get_customer_by_conversation,
+    get_feedback_by_channel,
 )
 from .db_connection import get_connection
 
@@ -32,8 +33,8 @@ def insert_metrics(ref_datetime=None):
     # users = get_users()
     # account_ids = {u.get("account_id") for u in users if u.get("account_id")}
     # account_ids = list(account_ids)
-    # account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f","8e9a3514-c5e8-52e7-842d-cb4e2a0a0cdb"]
-    account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f"]
+    account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f","8e9a3514-c5e8-52e7-842d-cb4e2a0a0cdb"]
+    # account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f"]
 
 
     # instead of get_chatbots()
@@ -42,7 +43,6 @@ def insert_metrics(ref_datetime=None):
         chatbots.extend(query_records("chatbots", "account_id", acc_id))
     settings_list = get_settings()
     conversation_list = get_conversations()
-    print("@##########",conversation_list)
 
     settings_map = {s.get("chatbot_id"): s for s in settings_list}
     conv_map = {c.get("chatbot_id"): c for c in conversation_list}
@@ -52,6 +52,7 @@ def insert_metrics(ref_datetime=None):
 
     for cb in chatbots:
         chatbot_id = cb.get("id")
+        print("@@@@@@@@",chatbot_id)
         name = cb.get("name")
         bot_created_at = cb.get("created_at")
 
@@ -158,11 +159,7 @@ def insert_metrics(ref_datetime=None):
             {"country": "India", "percentage": "85", "country_code": "IN"},
             {"country": "USA", "percentage": "90", "country_code": "US"}
         ]
-
-        STATIC_FB_CHANNEL = [
-            {"channel": "whatsapp", "count": 100},
-            {"channel": "facebook", "count": 80}
-        ]
+        STATIC_FB_CHANNEL = get_feedback_by_channel(chatbot_id, snapshot_time)
 
         STATIC_PERFORM_BY_GEO = {
             "dots": [
@@ -228,6 +225,7 @@ def insert_metrics(ref_datetime=None):
         alerts_json = json.dumps(STATIC_ALERTS)
         trends_json = json.dumps(STATIC_TRENDS)
         net_impact_graph_json = json.dumps(STATIC_NET_IMPACT_GRAPH)
+        
 
         sql = """
             INSERT INTO chatbot_metrics (
@@ -276,93 +274,3 @@ def insert_metrics(ref_datetime=None):
     conn.close()
     print(f"Inserted metrics for {len(chatbots)} chatbots.")
 
-
-# def insert_chatbot_conversations(ref_datetime=None):
-#     """
-#     Insert all conversation data (with channel + customer info + language name + summary)
-#     for each chatbot into chatbot_conversation table.
-#     """
-#     conn = get_connection()
-#     cursor = conn.cursor()
-
-#     # users = get_users()
-#     # account_ids = {u.get("account_id") for u in users if u.get("account_id")}
-#     # account_ids = list(account_ids)
-#     account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f"]
-
-
-#     # instead of get_chatbots()
-#     chatbots = []
-#     for acc_id in account_ids:
-#         chatbots.extend(query_records("chatbots", "account_id", acc_id))
-#     total_inserted = 0
-
-#     for cb in chatbots:
-#         chatbot_id = cb.get("id")
-#         chatbot_name = cb.get("name")
-
-#         conversations = get_conversations_for_chatbot(chatbot_id, ref_datetime)
-
-#         for conv in conversations:
-#             conversation_id = conv.get("id") or conv.get("conversation_id")
-
-#             summary_record = get_conversation_summary(
-#                     conversation_id, ref_datetime)
-#             query_summary = (summary_record or {}).get("title") or "AI interaction with z-assist"
-
-#             customer = get_customer_by_conversation(
-#                 conversation_id, ref_datetime) if conversation_id else None
-#             customer_name = customer.get("customer_name") if customer else None
-#             contact = customer.get("contact") if customer else None
-#             city = customer.get("city") if customer else None
-#             region = customer.get("region") if customer else None
-
-#             channel = conv.get("conversation_via") or "Unknown"
-
-#             language_name = None
-#             language_id = conv.get("language_id")
-#             if language_id:
-#                 language_record = get_record_by_id(
-#                     "languages", str(language_id))
-#                 language_name = language_record.get("name")
-
-#             agent_value = json.dumps(
-#                 [{
-#                     "name":"AI",
-#                     "profile_image":"https://zagentstoragedev94f5525a.blob.core.windows.net/data-connector-hub/welcome_avatar.svg?se=2045-10-19T07%3A53%3A48Z&sp=r&spr=https&sv=2025-11-05&sr=b&rscd=inline%3B%20filename%3Dwelcome_avatar.svg&rsct=image/svg%2Bxml&sig=ByHRzENC9L21IrmuEJ%2BhU4zbCfq%2Bqf4n8KTbOH3/a0Y%3D"
-#                  }]
-#                 )
-
-#             sql = """
-#                 INSERT INTO chatbot_conversation (
-#                     chatbot_id, query, customer_name, ticket_number, channel, status,
-#                     contact, city, region, agent, language_selected, last_updated, conversation_id
-#                 )
-#                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-#             """
-
-#             values = (
-#                 chatbot_id,
-#                 query_summary or "AI interaction with z-assist",
-#                 customer_name,
-#                 "TICKET-AI",
-#                 channel,
-#                 "success",
-#                 contact,
-#                 city,
-#                 region,
-#                 agent_value,  # JSON formatted
-#                 language_name,
-#                 conv.get("updated_at"),
-#                 conversation_id,
-#             )
-
-#             cursor.execute(sql, values)
-#             total_inserted += 1
-
-#     conn.commit()
-#     cursor.close()
-#     conn.close()
-
-#     print(
-#         f"Inserted {total_inserted} conversation records across {len(chatbots)} chatbots.")
