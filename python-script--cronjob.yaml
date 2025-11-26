@@ -1,65 +1,36 @@
----
-# Chatbot Metrics Processing Secret
 apiVersion: v1
 kind: Secret
 metadata:
   name: z-agent-db-secret
   namespace: default
-  labels:
-    app: chatbot-metrics
-    component: database
 type: Opaque
 stringData:
-  username: z_agent_user
-  password: z_agent_password
-
+  username: z_agent_user          # 🔁 replace if needed
+  password: z_agent_password      # 🔁 replace if needed
 ---
-# Chatbot Metrics Processing CronJob
+# --------------------------------------------
+# 🕒 CronJob: Python Script Runner
+# --------------------------------------------
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: chatbot-metrics-cronjob
+  name: python-script-cronjob
   namespace: default
-  labels:
-    app: chatbot-metrics
-    component: processor
-  annotations:
-    description: "Processes chatbot metrics and conversation data for dashboard analytics"
 spec:
+  # Runs every 15 minutes (adjust if needed)
   schedule: "*/15 * * * *"
-  timeZone: "UTC"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
 
   jobTemplate:
-    metadata:
-      labels:
-        app: chatbot-metrics-job
     spec:
-      backoffLimit: 3
-      ttlSecondsAfterFinished: 3600
       template:
-        metadata:
-          labels:
-            app: chatbot-metrics-pod
         spec:
-          restartPolicy: OnFailure
           containers:
-            - name: metrics-processor
+            - name: python-script
               image: zinfradevv1.azurecr.io/dashboardscript:latest
               imagePullPolicy: Always
               command: ["python", "main.py"]
-
-              # Resource limits and requests for better performance
-              resources:
-                requests:
-                  memory: "256Mi"
-                  cpu: "100m"
-                limits:
-                  memory: "512Mi"
-                  cpu: "500m"
-
               env:
                 - name: DB_HOST
                   value: "postgresql-shared.default.svc.cluster.local"
@@ -77,77 +48,4 @@ spec:
                     secretKeyRef:
                       name: z-agent-db-secret
                       key: password
-                - name: CONFIG_STORE_BASE_URL
-                  valueFrom:
-                    configMapKeyRef:
-                      name: chatbot-config
-                      key: config-store-base-url
-                      optional: true
-                - name: CONFIG_STORE_API_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: chatbot-config
-                      key: config-store-api-key
-                      optional: true
-
-              # Health and readiness checks
-              livenessProbe:
-                exec:
-                  command:
-                    - python
-                    - -c
-                    - "import sys; sys.exit(0)"
-                initialDelaySeconds: 30
-                periodSeconds: 60
-                timeoutSeconds: 10
-                failureThreshold: 3
-
-              # Volume for logs
-              volumeMounts:
-                - name: logs
-                  mountPath: /tmp
-                  readOnly: false
-
-          volumes:
-            - name: logs
-              emptyDir:
-                sizeLimit: 100Mi
-
-          # Node selector and tolerations for better scheduling
-          nodeSelector:
-            kubernetes.io/os: linux
-
-          # Security context
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            fsGroup: 2000
-
----
-# ConfigMap for configuration values
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: chatbot-config
-  namespace: default
-  labels:
-    app: chatbot-metrics
-    component: config
-data:
-  config-store-base-url: "https://z-config-store.48.216.130.212.nip.io"
-  log-level: "INFO"
-  batch-size: "100"
-
----
-# Secret for API keys and sensitive configuration
-apiVersion: v1
-kind: Secret
-metadata:
-  name: chatbot-config
-  namespace: default
-  labels:
-    app: chatbot-metrics
-    component: config
-type: Opaque
-stringData:
-  config-store-api-key: "891f41ee454479c49e458c4a7c50dd1e"
+          restartPolicy: OnFailure

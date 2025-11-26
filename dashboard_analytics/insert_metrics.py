@@ -52,7 +52,6 @@ def insert_metrics(ref_datetime=None):
 
     for cb in chatbots:
         chatbot_id = cb.get("id")
-        print("@@@@@@@@",chatbot_id)
         name = cb.get("name")
         bot_created_at = cb.get("created_at")
 
@@ -272,5 +271,4 @@ def insert_metrics(ref_datetime=None):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"Inserted metrics for {len(chatbots)} chatbots.")
 
