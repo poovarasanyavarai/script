@@ -1,0 +1,99 @@
+# ----------------------
+# Python cache / bytecode
+# ----------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# ----------------------
+# Environments
+# ----------------------
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ----------------------
+# Build & packaging
+# ----------------------
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+sdist/
+*.egg-info/
+*.egg
+
+# ----------------------
+# Logs & debugging
+# ----------------------
+*.log
+logs/
+debug.log
+
+# ----------------------
+# Unit tests / coverage
+# ----------------------
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ----------------------
+# IDE/editor files
+# ----------------------
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ----------------------
+# Jupyter Notebook
+# ----------------------
+.ipynb_checkpoints/
+
+# ----------------------
+# Typing tools
+# ----------------------
+.mypy_cache/
+.pyre/
+.pytype/
+
+# ----------------------
+# Environment config
+# ----------------------
+.env
+.env.*
+*.env
+
+# ----------------------
+# Database files
+# ----------------------
+*.sqlite3
+*.db
+
+# ----------------------
+# FastAPI / Flask uploads & static (optional)
+# ----------------------
+uploads/
+static/
+
+# ----------------------
+# OS-specific
+# ----------------------
+.DS_Store
+Thumbs.db
