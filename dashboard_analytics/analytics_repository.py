@@ -3,8 +3,8 @@ from collections import Counter
 from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 
-from .config_query import get_record_by_id
-from .db_connection import get_connection
+from dashboard_analytics.config_query import get_record_by_id
+from dashboard_analytics.database_connection import get_connection
 
 
 def get_conversations(ref_datetime=None):

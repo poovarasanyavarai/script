@@ -15,4 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the app
 COPY . .
 
-CMD ["python", "main.py"]
+# Create logs directory and set permissions
+RUN mkdir -p /app/logs && chmod 755 /app/logs
+
+# Use the clean main script
+CMD ["python", "dashboard_metrics_processor.py"]
