@@ -127,7 +127,6 @@ def get_feedback_by_channel(chatbot_id, ref_datetime=None):
                 "count": int(row["count"])
             })
 
-        print(f"Feedback by channel result: {result}")
         return result
 
     except Exception as e:

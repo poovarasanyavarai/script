@@ -18,8 +18,8 @@ _connection_pool: Optional[pool.ThreadedConnectionPool] = None
 
 
 def initialize_connection_pool(
-    min_connections: int = 1,
-    max_connections: int = 10
+    min_connections: int = 2,
+    max_connections: int = 20
 ) -> None:
     """
     Initialize the PostgreSQL connection pool.
@@ -31,14 +31,11 @@ def initialize_connection_pool(
     global _connection_pool
 
     try:
+        database_url = os.getenv("DATABASE_URL", "postgresql://z_agent_user:z_agent_password@localhost:5555/z_agent")
         _connection_pool = pool.ThreadedConnectionPool(
             min_connections,
             max_connections,
-            dbname=os.getenv("DB_NAME", "z_agent"),
-            user=os.getenv("DB_USER", "z_agent_user"),
-            password=os.getenv("DB_PASSWORD", "z_agent_password"),
-            host=os.getenv("DB_HOST", "localhost"),
-            port=os.getenv("DB_PORT", "5432")
+            database_url
         )
         logger.info("Database connection pool initialized successfully")
     except Exception as e:
@@ -62,13 +59,8 @@ def get_connection():
             logger.warning(f"Failed to get connection from pool: {e}, creating new connection")
 
     # Fallback to direct connection
-    return psycopg2.connect(
-        dbname=os.getenv("DB_NAME", "z_agent"),
-        user=os.getenv("DB_USER", "z_agent_user"),
-        password=os.getenv("DB_PASSWORD", "z_agent_password"),
-        host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5554")
-    )
+    database_url = os.getenv("DATABASE_URL", "postgresql://z_agent_user:z_agent_password@localhost:5555/z_agent")
+    return psycopg2.connect(database_url)
 
 
 def release_connection(conn) -> None:

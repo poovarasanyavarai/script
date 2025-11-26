@@ -117,7 +117,6 @@ class MetricsProcessor:
                 "trends": json.dumps(STATIC_TRENDS),
                 # Additional calculated metrics
                 "net_impact": self._calculate_net_impact(feedback_stats),
-                "automation_rate": self._calculate_automation_rate(conversations),
             }
 
             self.success_count += 1
@@ -154,18 +153,7 @@ class MetricsProcessor:
         net_score = ((positive - negative) / total) * 100
         return round(net_score, 2)
 
-    def _calculate_automation_rate(self, conversations):
-        """Calculate automation rate based on conversations."""
-        total_conv = conversations.get("total_conversations", 0)
-
-        if total_conv == 0:
-            return 0
-
-        # Assuming 75% automation rate as default (can be customized)
-        # This can be calculated based on human handovers vs total conversations
-        automation_rate = 75.0  # Default rate
-        return round(automation_rate, 2)
-
+    
     def save_to_database(self, metrics_list):
         """Save metrics to database."""
         if not metrics_list:
@@ -198,8 +186,8 @@ class MetricsProcessor:
                 snapshot_time, chatbot_id, name, total_coversation,
                 feedback_total, feedback_pos, feedback_neg, feedback_avg,
                 languages, fb_channel, ai_csat, fb_geo, perform_by_geo,
-                alerts, trends, net_impact, automation_rate
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                alerts, trends, net_impact
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql, (
             metrics["snapshot_time"], metrics["chatbot_id"], metrics["name"],
@@ -207,7 +195,7 @@ class MetricsProcessor:
             metrics["feedback_pos"], metrics["feedback_neg"], metrics["feedback_avg"],
             metrics["languages"], metrics["fb_channel"], metrics["ai_csat"],
             metrics["fb_geo"], metrics["perform_by_geo"], metrics["alerts"],
-            metrics["trends"], metrics["net_impact"], metrics["automation_rate"]
+            metrics["trends"], metrics["net_impact"]
         ))
 
     def log_summary(self, total_chatbots):
