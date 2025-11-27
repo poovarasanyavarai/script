@@ -1,0 +1,84 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dashboard-metrics
+  namespace: default
+  labels:
+    app: dashboard-metrics
+    component: analytics
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  concurrencyPolicy: Forbid  # Don't run if previous job is still running
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: dashboard-metrics
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: dashboard-metrics
+            image: zinfradevv1.azurecr.io/dashboard-metrics:latest
+            imagePullPolicy: Always
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "200m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+            env:
+              # Configuration Store
+              - name: CONFIG_STORE_BASE_URL
+                value: "https://z-config-store.48.216.130.212.nip.io"
+              - name: CONFIG_STORE_API_KEY
+                value: "891f41ee454479c49e458c4a7c50dd1e"
+
+              # Database Configuration
+              - name: DATABASE_URL
+                value: "postgresql://z_agent_user:z_agent_password@postgresql-shared:5432/z_agent"
+
+              # Application Settings
+              - name: LOG_LEVEL
+                value: "INFO"
+              - name: PYTHONPATH
+                value: "/app"
+
+            # Add health and readiness checks if needed
+            # This script runs and exits, so traditional probes may not be needed
+            # But we can add startup timeout and resource limits
+
+            # Security context
+            securityContext:
+              runAsNonRoot: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+            # Volume mounts for logs (optional)
+            volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+              readOnly: false
+
+          # Volumes
+          volumes:
+          - name: logs
+            emptyDir: {}
+
+          # Image pull secrets (if using private registry)
+          # Note: Removing this since image is accessible without secret
+          # imagePullSecrets:
+          # - name: acr-secret
+
+          # Node selection and tolerations (optional)
+          # nodeSelector:
+          #   node-type: worker
+
+          # Add reasonable timeout
+          activeDeadlineSeconds: 600  # 10 minutes max runtime

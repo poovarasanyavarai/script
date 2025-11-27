@@ -95,11 +95,175 @@ docker run dashboard-metrics
 ### Method 3: Azure Container Registry
 ```bash
 # Login to Azure Container Registry
-az acr login --name <registry-name>
+az acr login --name zinfradevv1
 
-# Build and push
-docker build -t <registry-name>/dashboardscript:latest .
-docker push <registry-name>/dashboardscript:latest
+# Build and push with correct image name
+docker build -t zinfradevv1.azurecr.io/dashboard-metrics:latest .
+docker push zinfradevv1.azurecr.io/dashboard-metrics:latest
+```
+
+## ☸️ Kubernetes Deployment
+
+The Dashboard Metrics system is designed to run as a Kubernetes CronJob that executes every 15 minutes.
+
+### Prerequisites
+- Kubernetes cluster with `kubectl` configured
+- Azure Container Registry access
+- PostgreSQL database accessible from the cluster
+
+### Build and Push Image
+
+```bash
+# Navigate to project directory
+cd "/home/poovarasan/Downloads/scripts 4/scripts"
+
+# Login to Azure Container Registry
+az acr login --name zinfradevv1
+
+# Build the Docker image with correct tag
+docker build -t zinfradevv1.azurecr.io/dashboard-metrics:latest .
+
+# Push to Azure Container Registry
+docker push zinfradevv1.azurecr.io/dashboard-metrics:latest
+```
+
+### Deploy to Kubernetes
+
+#### Option 1: Automated Deployment (Recommended)
+```bash
+# Make deployment script executable
+chmod +x deploy-k8s.sh
+
+# Run complete deployment
+./deploy-k8s.sh
+```
+
+#### Option 2: Manual Deployment
+```bash
+# Apply configuration
+kubectl apply -f k8s-configmap.yaml
+kubectl apply -f k8s-secret.yaml
+kubectl apply -f k8s-cronjob-dashboard-metrics.yaml
+
+# Create ACR secret (if needed)
+kubectl create secret docker-registry acr-secret \
+    --docker-server=zinfradevv1.azurecr.io \
+    --docker-username=<ACR_USERNAME> \
+    --docker-password=<ACR_PASSWORD> \
+    --docker-email=<ACR_EMAIL>
+```
+
+### Kubernetes Configuration
+
+#### CronJob Details
+- **Name**: `dashboard-metrics`
+- **Schedule**: `*/15 * * * *` (every 15 minutes)
+- **Image**: `zinfradevv1.azurecr.io/dashboard-metrics:latest`
+- **Namespace**: `default`
+- **Resources**: 256Mi/200m requests, 512Mi/500m limits
+- **Timeout**: 10 minutes max runtime
+
+#### Environment Variables
+| Variable | Value | Source |
+|----------|-------|--------|
+| `CONFIG_STORE_BASE_URL` | `https://z-config-store.48.216.130.212.nip.io` | ConfigMap |
+| `CONFIG_STORE_API_KEY` | `891f41ee454479c49e458c4a7c50dd1e` | Secret |
+| `DATABASE_URL` | `postgresql://z_agent_user:z_agent_password@postgresql-shared:5432/z_agent` | CronJob spec |
+| `LOG_LEVEL` | `INFO` | ConfigMap |
+| `PYTHONPATH` | `/app` | ConfigMap |
+
+### Testing the Kubernetes Deployment
+
+#### Manual Test Execution
+```bash
+# Create manual test job with new naming convention
+kubectl create job --from=cronjob/dashboard-metrics dashboard-metrics-manual-$(date +%s)
+
+# Monitor job progress
+kubectl get jobs -l app=dashboard-metrics
+kubectl get pods -l app=dashboard-metrics
+
+# View logs
+kubectl logs -l app=dashboard-metrics -f
+```
+
+#### Expected Test Output
+```
+✅ Successfully processed: Chatbot Name
+✅ Success rate: 100.0% (X/X chatbots)
+✅ Metrics insertion completed
+Successfully processed X out of X chatbots.
+```
+
+### Monitoring and Maintenance
+
+#### Check CronJob Status
+```bash
+# Verify cronjob configuration
+kubectl get cronjob dashboard-metrics
+
+# Check recent executions
+kubectl get jobs -l app=dashboard-metrics --sort-by=.metadata.creationTimestamp
+
+# Monitor resource usage
+kubectl top pods -l app=dashboard-metrics
+```
+
+#### Log Analysis
+```bash
+# View recent logs
+kubectl logs -l app=dashboard-metrics --tail=50
+
+# Follow logs in real-time
+kubectl logs -l app=dashboard-metrics -f
+
+# Check specific job logs
+kubectl logs job/dashboard-metrics-manual-<timestamp>
+```
+
+#### Troubleshooting
+```bash
+# Describe failed job
+kubectl describe job <job-name>
+
+# Check pod events
+kubectl describe pod <pod-name>
+
+# View previous pod logs (if container restarted)
+kubectl logs <pod-name> --previous
+```
+
+### Updating the Deployment
+
+#### Update Docker Image
+```bash
+# Build new version
+docker build -t zinfradevv1.azurecr.io/dashboard-metrics:v2.0 .
+docker push zinfradevv1.azurecr.io/dashboard-metrics:v2.0
+
+# Update cronjob with new image
+kubectl patch cronjob dashboard-metrics -p '{"spec":{"jobTemplate":{"spec":{"template":{"spec":{"containers":[{"name":"dashboard-metrics","image":"zinfradevv1.azurecr.io/dashboard-metrics:v2.0"}]}}}}}}'
+```
+
+#### Update Configuration
+```bash
+# Update ConfigMap
+kubectl apply -f k8s-configmap.yaml
+
+# Update Secret
+kubectl apply -f k8s-secret.yaml
+
+# Restart jobs to pick up new config
+kubectl delete jobs -l app=dashboard-metrics
+```
+
+### Cleanup
+```bash
+# Delete old completed jobs (keep last 3)
+kubectl delete jobs -l app=dashboard-metrics --field-selector=status.successful=1 --ignore-not-found=true
+
+# Clean up test jobs
+kubectl delete job dashboard-metrics-manual-<timestamp>
 ```
 
 ## 📝 Configuration
