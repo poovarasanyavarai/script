@@ -170,6 +170,7 @@ class MetricsProcessor:
                 "feedback_pos": feedback_stats["feedback_pos"],
                 "feedback_neg": feedback_stats["feedback_neg"],
                 "feedback_avg": feedback_stats["feedback_avg"],
+                "ai_csat": self._calculate_csat(feedback_stats),
                 "alerts": json.dumps(STATIC_ALERTS),
                 "fb_geo": json.dumps(STATIC_FB_GEO),
                 "fb_channel": json.dumps(feedback_channel or STATIC_FB_CHANNEL),
@@ -223,6 +224,12 @@ class MetricsProcessor:
             self.logger.warning(f"Could not get previous metrics: {e}")
             return {"ai_resolved": 0, "human_resolved": 0, "total_coversation": 0}
 
+    def _calculate_csat(self, feedback_stats):
+        """Calculate CSAT score from feedback stats."""
+        total = feedback_stats["feedback_total"]
+        positive = feedback_stats["feedback_pos"]
+        return (positive / total * 100) if total > 0 else 0
+
     def save_to_database(self, metrics_list):
         """Save complete metrics to database."""
         if not metrics_list:
@@ -255,10 +262,10 @@ class MetricsProcessor:
                 snapshot_time, chatbot_id, name, profile_url, bot_created_at,
                 languages, total_coversation, coversation_diff, leads, leads_diff, platform,
                 ai_resolved, human_resolved, ai_resolved_diff, human_resolved_diff,
-                feedback_total, feedback_pos, feedback_neg, feedback_avg, alerts, fb_geo, fb_channel,
+                feedback_total, feedback_pos, feedback_neg, feedback_avg, ai_csat, alerts, fb_geo, fb_channel,
                 trends, net_impact, net_impact_graph, perform_by_geo
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql, (
             metrics["snapshot_time"], metrics["chatbot_id"], metrics["name"],
@@ -267,7 +274,7 @@ class MetricsProcessor:
             metrics["leads_diff"], metrics["platform"], metrics["ai_resolved"],
             metrics["human_resolved"], metrics["ai_resolved_diff"], metrics["human_resolved_diff"],
             metrics["feedback_total"], metrics["feedback_pos"], metrics["feedback_neg"],
-            metrics["feedback_avg"], metrics["alerts"], metrics["fb_geo"],
+            metrics["feedback_avg"], metrics["ai_csat"], metrics["alerts"], metrics["fb_geo"],
             metrics["fb_channel"], metrics["trends"], metrics["net_impact"],
             metrics["net_impact_graph"], metrics["perform_by_geo"]
         ))
