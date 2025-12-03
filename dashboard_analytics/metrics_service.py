@@ -1,4 +1,4 @@
-"""Clean, simple metrics insertion with all missing fields from previous code."""
+"""Clean, production-ready metrics processing service for chatbot analytics."""
 
 import json
 import logging
@@ -13,11 +13,9 @@ from dashboard_analytics.analytics_repository import (
 from dashboard_analytics.config_query import get_settings, query_records
 from dashboard_analytics.database_connection import get_connection
 
-# Setup logger
 logger = logging.getLogger(__name__)
 
-
-# Static data structures for dashboard analytics
+# Static dashboard analytics data
 STATIC_FB_GEO = [
     {"country": "India", "percentage": "85", "country_code": "IN"},
     {"country": "USA", "percentage": "90", "country_code": "US"}
@@ -82,7 +80,7 @@ STATIC_TRENDS = [
 
 
 class MetricsProcessor:
-    """Simple class to process metrics for chatbots with all fields from previous code."""
+    """Efficient metrics processor for chatbot analytics."""
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -90,66 +88,38 @@ class MetricsProcessor:
         self.failure_count = 0
 
     def process_chatbot(self, chatbot, snapshot_time, settings_map, conv_map):
-        """Process a single chatbot and return complete metrics data."""
+        """Process a single chatbot and return comprehensive metrics."""
         chatbot_id = chatbot.get("id")
         name = chatbot.get("name", "Unknown")
-        bot_created_at = chatbot.get("created_at")
 
         try:
             self.logger.info(f"Processing chatbot: {name}")
 
-            # Get chatbot settings and conversation data
+            # Get chatbot-specific data
             cb_settings = settings_map.get(chatbot_id, {})
             cb_conversation = conv_map.get(chatbot_id, {})
 
-            # Get profile URL from settings
+            # Extract core data
+            total_conversations = cb_conversation.get("total_conversations", 0)
             profile_url = cb_settings.get("profile_image_url")
+            bot_created_at = chatbot.get("created_at")
 
-            # Get core data
+            # Get analytics data
             languages = get_language_distribution(chatbot_id)
             feedback_stats = get_feedback_stats_by_chatbot(chatbot_id)
             feedback_channel = get_feedback_by_channel(chatbot_id, snapshot_time)
 
-            # Extract conversation data
-            total_conversations = cb_conversation.get("total_conversations", 0)
-            ai_resolve = cb_conversation.get("total_conversations", 0)
-            human_resolve = 0
-
-            if total_conversations > 0:
-                ai_resolved = ai_resolve
-                human_resolved = human_resolve
-            else:
-                ai_resolved = 0
-                human_resolved = 0
+            # Calculate conversation metrics
+            ai_resolved = total_conversations
+            human_resolved = 0
 
             # Get previous metrics for diff calculations
             prev_metrics = self._get_previous_metrics(chatbot_id, snapshot_time)
-            prev_ai_resolved = prev_metrics.get("ai_resolved", 0)
-            prev_human_resolved = prev_metrics.get("human_resolved", 0)
-            prev_total_conversation = prev_metrics.get("total_coversation", 0)
+            conversation_diff = total_conversations - (prev_metrics.get("total_coversation", 0) or 0)
+            ai_resolved_diff = ai_resolved - (prev_metrics.get("ai_resolved", 0) or 0)
+            human_resolved_diff = human_resolved - (prev_metrics.get("human_resolved", 0) or 0)
 
-            # Calculate differences with proper None handling
-            prev_total_conversation = prev_total_conversation or 0
-            prev_ai_resolved = prev_ai_resolved or 0
-            prev_human_resolved = prev_human_resolved or 0
-
-            conversation_diff = total_conversations - prev_total_conversation
-            ai_resolved_diff = ai_resolved - prev_ai_resolved
-            human_resolved_diff = human_resolved - prev_human_resolved
-
-            # Static leads for now
-            leads = 0
-            leads_diff = 0
-
-            # Platform JSON from conversation data
-            platform = cb_conversation.get("conversation_via", {})
-            platform_json = json.dumps(platform)
-
-            # Static net impact and graph
-            net_impact = 20
-            net_impact_graph = {"ai": 14, "human": 12, "percentage": 30}
-
-            # Build complete metrics record
+            # Build metrics record
             metrics = {
                 "snapshot_time": snapshot_time,
                 "chatbot_id": chatbot_id,
@@ -159,9 +129,9 @@ class MetricsProcessor:
                 "languages": json.dumps(languages),
                 "total_coversation": total_conversations,
                 "coversation_diff": conversation_diff,
-                "leads": leads,
-                "leads_diff": leads_diff,
-                "platform": platform_json,
+                "leads": 0,
+                "leads_diff": 0,
+                "platform": json.dumps(cb_conversation.get("conversation_via", {})),
                 "ai_resolved": ai_resolved,
                 "human_resolved": human_resolved,
                 "ai_resolved_diff": ai_resolved_diff,
@@ -175,8 +145,8 @@ class MetricsProcessor:
                 "fb_geo": json.dumps(STATIC_FB_GEO),
                 "fb_channel": json.dumps(feedback_channel or STATIC_FB_CHANNEL),
                 "trends": json.dumps(STATIC_TRENDS),
-                "net_impact": net_impact,
-                "net_impact_graph": json.dumps(net_impact_graph),
+                "net_impact": self._calculate_net_impact(feedback_stats),
+                "net_impact_graph": json.dumps({"ai": 14, "human": 12, "percentage": 30}),
                 "perform_by_geo": json.dumps(STATIC_PERFORM_BY_GEO),
             }
 
@@ -190,7 +160,7 @@ class MetricsProcessor:
             return None
 
     def _get_previous_metrics(self, chatbot_id, snapshot_time):
-        """Get previous metrics record for diff calculations."""
+        """Retrieve previous metrics for calculating differences."""
         try:
             conn = get_connection()
             cursor = conn.cursor()
@@ -199,15 +169,12 @@ class MetricsProcessor:
                 """
                 SELECT ai_resolved, human_resolved, total_coversation
                 FROM chatbot_metrics
-                WHERE chatbot_id = %s
-                AND snapshot_time <= %s
-                ORDER BY snapshot_time DESC
-                LIMIT 1
+                WHERE chatbot_id = %s AND snapshot_time <= %s
+                ORDER BY snapshot_time DESC LIMIT 1
                 """,
-                (chatbot_id, snapshot_time),
+                (chatbot_id, snapshot_time)
             )
             prev = cursor.fetchone()
-
             cursor.close()
             conn.close()
 
@@ -217,21 +184,32 @@ class MetricsProcessor:
                     "human_resolved": prev[1],
                     "total_coversation": prev[2]
                 }
-            else:
-                return {"ai_resolved": 0, "human_resolved": 0, "total_coversation": 0}
+            return {"ai_resolved": 0, "human_resolved": 0, "total_coversation": 0}
 
         except Exception as e:
             self.logger.warning(f"Could not get previous metrics: {e}")
             return {"ai_resolved": 0, "human_resolved": 0, "total_coversation": 0}
 
     def _calculate_csat(self, feedback_stats):
-        """Calculate CSAT score from feedback stats."""
+        """Calculate Customer Satisfaction (CSAT) score."""
         total = feedback_stats["feedback_total"]
         positive = feedback_stats["feedback_pos"]
+        logger.info(f"##@@@## ai CSAT {positive}/{total} * 100")
         return (positive / total * 100) if total > 0 else 0
 
+    def _calculate_net_impact(self, feedback_stats):
+        """Calculate net impact score from feedback data."""
+        total = feedback_stats["feedback_total"]
+        positive = feedback_stats["feedback_pos"]
+
+        if total == 0:
+            return 0
+
+        net_score = positive / total * 100
+        return round(net_score, 2)
+
     def save_to_database(self, metrics_list):
-        """Save complete metrics to database."""
+        """Save processed metrics to database efficiently."""
         if not metrics_list:
             self.logger.warning("No metrics to save")
             return
@@ -239,10 +217,8 @@ class MetricsProcessor:
         conn = get_connection()
         try:
             cursor = conn.cursor()
-
             for metrics in metrics_list:
-                self._insert_complete_metrics_record(cursor, metrics)
-
+                self._insert_metrics_record(cursor, metrics)
             conn.commit()
             self.logger.info(f"✅ Successfully saved {len(metrics_list)} records")
 
@@ -250,22 +226,21 @@ class MetricsProcessor:
             conn.rollback()
             self.logger.error(f"❌ Database error: {str(e)}")
             raise
-
         finally:
             cursor.close()
             conn.close()
 
-    def _insert_complete_metrics_record(self, cursor, metrics):
-        """Insert a complete metrics record with all fields."""
+    def _insert_metrics_record(self, cursor, metrics):
+        """Insert a complete metrics record into database."""
         sql = """
             INSERT INTO chatbot_metrics (
                 snapshot_time, chatbot_id, name, profile_url, bot_created_at,
                 languages, total_coversation, coversation_diff, leads, leads_diff, platform,
                 ai_resolved, human_resolved, ai_resolved_diff, human_resolved_diff,
-                feedback_total, feedback_pos, feedback_neg, feedback_avg, ai_csat, alerts, fb_geo, fb_channel,
-                trends, net_impact, net_impact_graph, perform_by_geo
+                feedback_total, feedback_pos, feedback_neg, feedback_avg, ai_csat,
+                alerts, fb_geo, fb_channel, trends, net_impact, net_impact_graph, perform_by_geo
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql, (
             metrics["snapshot_time"], metrics["chatbot_id"], metrics["name"],
@@ -280,7 +255,7 @@ class MetricsProcessor:
         ))
 
     def log_summary(self, total_chatbots):
-        """Log processing summary."""
+        """Log processing summary with success metrics."""
         self.logger.info("=" * 50)
         self.logger.info("METRICS PROCESSING SUMMARY")
         self.logger.info("=" * 50)
@@ -296,31 +271,26 @@ class MetricsProcessor:
 
 
 def process_dashboard_metrics(ref_datetime=None):
-    """Main function to insert complete metrics for all chatbots."""
+    """Main function to process dashboard metrics for all chatbots."""
     processor = MetricsProcessor()
     snapshot_time = ref_datetime or datetime.now()
 
     try:
         logger.info("🚀 Starting dashboard metrics processing")
 
-        # Use both account IDs from previous code
+        # Get all chatbots from multiple accounts
         account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f", "8e9a3514-c5e8-52e7-842d-cb4e2a0a0cdb"]
-        # account_ids = ["86c3cb12-d1d1-5a0e-ab58-3230ec9fe11f"]
-
-
-        # Get all chatbots
         chatbots = []
         for acc_id in account_ids:
             chatbots.extend(query_records("chatbots", "account_id", acc_id))
 
-        # Get settings and conversations once for efficiency
+        # Pre-fetch settings and conversations for efficiency
         settings_list = get_settings()
         conversation_list = get_conversations()
-
         settings_map = {s.get("chatbot_id"): s for s in settings_list}
         conv_map = {c.get("chatbot_id"): c for c in conversation_list}
 
-        # Process each chatbot
+        # Process all chatbots
         metrics_list = []
         for chatbot in chatbots:
             metrics = processor.process_chatbot(chatbot, snapshot_time, settings_map, conv_map)
@@ -331,12 +301,11 @@ def process_dashboard_metrics(ref_datetime=None):
         if metrics_list:
             processor.save_to_database(metrics_list)
 
-        # Log summary
+        # Log final summary
         processor.log_summary(len(chatbots))
-        logger.info("✅ Metrics insertion completed")
-
+        logger.info("✅ Metrics processing completed successfully")
         print(f"Successfully processed {processor.success_count} out of {len(chatbots)} chatbots.")
 
     except Exception as e:
-        logger.error(f"❌ Metrics insertion failed: {str(e)}")
+        logger.error(f"❌ Metrics processing failed: {str(e)}")
         raise

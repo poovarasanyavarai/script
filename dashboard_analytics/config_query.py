@@ -1,5 +1,4 @@
 import requests
-from configs.config import settings
 
 
 # CONFIG_STORE_BASE_URL = settings.CONFIG_STORE_BASE_URL
