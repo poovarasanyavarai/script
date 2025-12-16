@@ -291,7 +291,6 @@ def process_dashboard_metrics(ref_datetime=None):
         # Pre-fetch settings and conversations for efficiency
         settings_list = get_settings()
         conversation_list = get_conversations()
-        print(conversation_list,"###########")
         settings_map = {s.get("chatbot_id"): s for s in settings_list}
         conv_map = {c.get("chatbot_id"): c for c in conversation_list}
 
