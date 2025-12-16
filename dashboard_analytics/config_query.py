@@ -4,7 +4,7 @@ import requests
 # CONFIG_STORE_BASE_URL = settings.CONFIG_STORE_BASE_URL
 # CONFIG_STORE_API_KEY = settings.CONFIG_STORE_API_KEY
 
-CONFIG_STORE_BASE_URL = "https://z-config-store.48.216.130.212.nip.io"
+CONFIG_STORE_BASE_URL = "https://config-store.zagent.dev.yavar.ai"
 CONFIG_STORE_API_KEY = "891f41ee454479c49e458c4a7c50dd1e"
 
 URL=f"{CONFIG_STORE_BASE_URL}/api/v1/configs"

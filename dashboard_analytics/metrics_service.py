@@ -231,27 +231,31 @@ class MetricsProcessor:
             conn.close()
 
     def _insert_metrics_record(self, cursor, metrics):
+
         """Insert a complete metrics record into database."""
         sql = """
             INSERT INTO chatbot_metrics (
-                snapshot_time, chatbot_id, name, profile_url, bot_created_at,
+                chatbot_id, name, profile_url, bot_created_at,
                 languages, total_coversation, coversation_diff, leads, leads_diff, platform,
                 ai_resolved, human_resolved, ai_resolved_diff, human_resolved_diff,
-                feedback_total, feedback_pos, feedback_neg, feedback_avg, ai_csat,
-                alerts, fb_geo, fb_channel, trends, net_impact, net_impact_graph, perform_by_geo
+                feedback_total, feedback_pos, feedback_neg, feedback_avg, ai_csat, human_csat,
+                alerts, fb_geo, fb_channel, trends, net_impact, net_impact_graph, perform_by_geo,
+                active_status, ongoing_calls, in_queue, unresolved
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql, (
-            metrics["snapshot_time"], metrics["chatbot_id"], metrics["name"],
+            metrics["chatbot_id"], metrics["name"],
             metrics["profile_url"], metrics["bot_created_at"], metrics["languages"],
             metrics["total_coversation"], metrics["coversation_diff"], metrics["leads"],
             metrics["leads_diff"], metrics["platform"], metrics["ai_resolved"],
             metrics["human_resolved"], metrics["ai_resolved_diff"], metrics["human_resolved_diff"],
             metrics["feedback_total"], metrics["feedback_pos"], metrics["feedback_neg"],
-            metrics["feedback_avg"], metrics["ai_csat"], metrics["alerts"], metrics["fb_geo"],
-            metrics["fb_channel"], metrics["trends"], metrics["net_impact"],
-            metrics["net_impact_graph"], metrics["perform_by_geo"]
+            metrics["feedback_avg"], metrics["ai_csat"], metrics["ai_csat"],  # human_csat same as ai_csat
+            metrics["alerts"], metrics["fb_geo"], metrics["fb_channel"],
+            metrics["trends"], metrics["net_impact"],
+            metrics["net_impact_graph"], metrics["perform_by_geo"],
+            True, 0, 0, 0  # active_status, ongoing_calls, in_queue, unresolved
         ))
 
     def log_summary(self, total_chatbots):
@@ -287,6 +291,7 @@ def process_dashboard_metrics(ref_datetime=None):
         # Pre-fetch settings and conversations for efficiency
         settings_list = get_settings()
         conversation_list = get_conversations()
+        print(conversation_list,"###########")
         settings_map = {s.get("chatbot_id"): s for s in settings_list}
         conv_map = {c.get("chatbot_id"): c for c in conversation_list}
 

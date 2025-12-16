@@ -12,7 +12,7 @@ services:
       - CONFIG_STORE_API_KEY=891f41ee454479c49e458c4a7c50dd1e
 
       # Database Configuration
-      - DATABASE_URL=postgresql://z_agent_user:z_agent_password@localhost:5555/z_agent
+      - DATABASE_URL=postgresql://z_agent_user:z_agent_password@localhost:5554/z_agent
 
       # Application Settings
       - LOG_LEVEL=INFO
